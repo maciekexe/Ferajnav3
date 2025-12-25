@@ -15,7 +15,7 @@ const objectiveData = {
         { name: "Zbieranie zapasów", status: "NIE ROZPOCZĘTE" },
         { name: "Weryfikacja modów", status: "W TOKU" }
     ],
-    note: "SYSTEM PRAWNY USZKODZONY. REJESTR ZASAD NIEODNALEZIONY. PRZETRWAJ ZA WSZELKĄ CENĘ."
+    note: "BAZA DANYCH STATUSU PRAWNEGO USZKODZONA. BRAK REJESTRU ZASAD. PRZETRWAJ ZA WSZELKĄ CENĘ."
 };
 
 // --- RADIO LOGS ---
@@ -95,15 +95,15 @@ function renderBounties() {
     });
     localStorage.setItem('f3bounties_v2', JSON.stringify(bounties));
 
-    if (bounties.length === 0) { container.innerHTML = `<p class="text-[9px] text-gray-700 italic text-center uppercase">Brak zleceń...</p>`; updateTicker(); return; }
+    if (bounties.length === 0) { container.innerHTML = `<p class="text-[9px] text-gray-700 italic text-center uppercase tracking-tighter">Brak zleceń w sektorze...</p>`; updateTicker(); return; }
 
     container.innerHTML = bounties.map(b => `
         <div class="bounty-card p-2 relative ${b.status === 'ZATWIERDZONE' ? 'approved' : ''} ${b.status === 'ZREALIZOWANE' ? 'completed' : ''}" onclick="adminManageBounty(${b.id})">
             <div class="flex items-center gap-3">
-                <img src="https://minotar.net/avatar/${b.target}/32" class="border border-zinc-800">
+                <img src="https://minotar.net/avatar/${b.target}/32" class="border border-zinc-800 shadow-sm">
                 <div class="text-[10px] flex-1">
-                    <div class="flex justify-between items-start"><span class="target-name font-bold tracking-widest font-mono">${b.target}</span><span class="text-[8px] text-gray-600">${b.date}</span></div>
-                    <p class="${b.status === 'ZREALIZOWANE' ? 'text-green-700' : 'text-yellow-600'} font-bold">NAGRODA: ${b.reward}</p>
+                    <div class="flex justify-between items-start"><span class="target-name font-bold tracking-widest font-mono uppercase">${b.target}</span><span class="text-[8px] text-gray-600">${b.date}</span></div>
+                    <p class="${b.status === 'ZREALIZOWANE' ? 'text-green-600 font-black' : 'text-yellow-600'} font-bold">NAGRODA: ${b.reward}</p>
                     <p class="text-gray-500 mt-1 italic leading-tight uppercase text-[9px] font-light">"${b.reason}"</p>
                 </div>
             </div>
@@ -116,7 +116,7 @@ function renderBounties() {
 }
 
 function adminManageBounty(id) {
-    const pass = prompt("KOD AUTORYZACJI:");
+    const pass = prompt("PODAJ KOD AUTORYZACJI:");
     if (pass !== "ferajna") return;
     const bounties = JSON.parse(localStorage.getItem('f3bounties_v2') || '[]');
     const bIdx = bounties.findIndex(b => b.id === id);
@@ -128,7 +128,7 @@ function adminManageBounty(id) {
     localStorage.setItem('f3bounties_v2', JSON.stringify(bounties)); renderBounties();
 }
 
-// --- NEWS TICKER ---
+// --- SYSTEM NEWSÓW ---
 function updateTicker() {
     const bounties = JSON.parse(localStorage.getItem('f3bounties_v2') || '[]');
     const approved = bounties.filter(b => b.status === "ZATWIERDZONE");
@@ -150,7 +150,7 @@ async function refreshStatus() {
             players.forEach(p => { if (!lastPlayerList.includes(p)) addSystemLog(`Sygnał życia: ${p}.`, "JOIN"); });
             lastPlayerList.forEach(p => { if (!players.includes(p)) addSystemLog(`Zanik sygnału: ${p}.`, "ALARM"); });
             lastPlayerList = players;
-            pList.innerHTML = players.map(p => `<div class="flex items-center gap-3 border-b border-white/5 pb-1"><img src="https://minotar.net/helm/${p}/20" class="border border-green-900 shadow-sm"><span class="text-green-400 text-xs font-bold uppercase tracking-widest font-mono">${p}</span><span class="text-[8px] text-gray-600 ml-auto italic">LIVE</span></div>`).join('');
+            pList.innerHTML = players.map(p => `<div class="flex items-center gap-3 border-b border-white/5 pb-1"><img src="https://minotar.net/helm/${p}/20" class="border border-green-900 shadow-sm"><span class="text-green-400 text-xs font-bold uppercase tracking-widest font-mono">${p}</span><span class="text-[8px] text-gray-600 ml-auto italic font-bold">LIVE</span></div>`).join('');
             document.getElementById("player-count").innerText = `OCALAŁYCH: ${data.players.online}/${data.players.max}`;
             document.getElementById("server-status-text").innerText = "ŁĄCZNOŚĆ STABILNA";
             document.getElementById("server-status-text").className = "text-sm font-bold text-green-400 uppercase italic";
@@ -220,7 +220,7 @@ function togglePower() {
 }
 
 // --- UTILS ---
-function copyIP() { navigator.clipboard.writeText(serverIP); alert("IP skopiowane."); }
+function copyIP() { navigator.clipboard.writeText(serverIP); alert("Współrzędne skopiowane."); }
 function changeCamera() {
     const img = document.getElementById('cctv-img');
     const coords = [`X: ${Math.floor(Math.random()*1500)} Z: ${Math.floor(Math.random()*1500)}`, `X: -320 Z: 890`, `X: 0 Z: 0` ];

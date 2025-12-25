@@ -1,39 +1,27 @@
-/* style.css - CRT, BOUNTY COLOURS & SCROLL FIX */
+/* style.css - FINAL VERSION */
 
 html, body {
-  margin: 0;
-  padding: 0;
-  width: 100%;
-  background: #010201;
-  font-family: 'JetBrains Mono', monospace;
-  color: #9aff9a;
-  overflow-x: hidden;
-  position: relative;
+  margin: 0; padding: 0; width: 100%;
+  background: #010201; font-family: 'JetBrains Mono', monospace;
+  color: #9aff9a; overflow-x: hidden; position: relative;
 }
 
 #monitor-overlay {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 100;
+  position: fixed; inset: 0; pointer-events: none; z-index: 100;
   background: 
     linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), 
     linear-gradient(90deg, rgba(255, 0, 0, 0.05), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.05));
   background-size: 100% 3px, 3px 100%;
+  transition: filter 0.1s;
 }
 
 #monitor-overlay::after {
-  content: "";
-  position: absolute;
-  top: 0; left: 0; width: 100%; height: 100%;
+  content: ""; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
   background: repeating-linear-gradient(0deg, transparent, transparent 10%, rgba(255, 255, 255, 0.02) 11%, transparent 12%);
   animation: vcr-scroll 10s linear infinite;
 }
 
-@keyframes vcr-scroll {
-  0% { transform: translateY(-100%); }
-  100% { transform: translateY(100%); }
-}
+@keyframes vcr-scroll { 0% { transform: translateY(-100%); } 100% { transform: translateY(100%); } }
 
 @keyframes crash-flicker {
     0% { opacity: 1; filter: brightness(1); }
@@ -53,56 +41,41 @@ html, body {
 }
 
 .btn-tactical {
-    border: 1px solid #ef4444;
-    background: rgba(127, 29, 29, 0.1);
-    transition: all 0.3s ease;
-    color: #ef4444;
+    border: 1px solid #ef4444; background: rgba(127, 29, 29, 0.1);
+    transition: all 0.3s ease; color: #ef4444;
 }
 
 .btn-tactical:hover {
     background: #ef4444; color: black; box-shadow: 0 0 20px #ef4444;
 }
 
-@keyframes marquee {
-  0% { transform: translateX(100%); }
-  100% { transform: translateX(-100%); }
-}
-
+@keyframes marquee { 0% { transform: translateX(100%); } 100% { transform: translateX(-100%); } }
 .animate-marquee { display: inline-block; animation: marquee 35s linear infinite; }
 
 /* BOUNTY CARDS HIERARCHY */
 
 /* 1. OCZEKIWANE (Ciemne, szare) */
 .bounty-card {
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    background: rgba(0, 0, 0, 0.6);
-    transition: all 0.3s;
-    cursor: pointer;
-    opacity: 0.4;
+    border: 1px solid rgba(255, 255, 255, 0.05); background: rgba(0, 0, 0, 0.6);
+    transition: all 0.3s; cursor: pointer; opacity: 0.3;
 }
 
 /* 2. ZATWIERDZONE (Wyraźne, czerwone) */
 .bounty-card.approved {
-    opacity: 1;
-    border: 1px solid #ef4444;
-    border-left: 4px solid #ef4444;
+    opacity: 1; border: 1px solid #ef4444; border-left: 4px solid #ef4444;
     box-shadow: inset 0 0 15px rgba(239, 68, 68, 0.1);
 }
 .bounty-card.approved .target-name { color: #ff0000; text-shadow: 0 0 5px rgba(255,0,0,0.5); }
 
-/* 3. ZREALIZOWANE (Zielone) */
+/* 3. ZREALIZOWANE (Wyraźne, zielone) */
 .bounty-card.completed {
-    opacity: 0.8;
-    border: 1px solid #22c55e;
-    border-left: 4px solid #22c55e;
-    background: rgba(34, 197, 94, 0.05);
+    opacity: 1; border: 1px solid #22c55e; border-left: 4px solid #22c55e;
+    background: rgba(34, 197, 94, 0.08);
 }
-.bounty-card.completed img { filter: grayscale(0.5) brightness(0.7); }
+.bounty-card.completed img { filter: grayscale(0.5) contrast(1.2); }
 .bounty-card.completed .target-name { color: #22c55e; }
 
-.redacted {
-    background: #111; color: #111; transition: color 0.4s; padding: 0 2px;
-}
+.redacted { background: #111; color: #111; transition: color 0.4s; padding: 0 2px; }
 .redacted:hover { color: #ff0000; background: transparent; }
 
 body { padding-bottom: 20px; }
