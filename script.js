@@ -1,186 +1,251 @@
 // --- KONFIGURACJA ---
-let lastPlayerList = [];
-let adminCounter = 0;
 const serverIP = "ferajnav3.aternos.me";
 const serverStartDate = new Date("2025-12-30");
+let lastPlayerList = [];
+let adminCounter = 0;
+let radioResetCounter = 0;
+let isSystemCrashing = false;
 
 const objectiveData = {
-    name: "MOBILIZACJA",
-    phase: "0/4",
-    percent: 0,
+    name: "DZIEŃ ZERO: MOBILIZACJA",
+    phase: "PRZYGOTOWANIA",
+    percent: 10,
     items: [
-        { name: "Plecaki Ucieczkowe", status: "GOTOWE", priority: "WYSOKI" },
-        { name: "Zapasy Medyczne", status: "0/20", priority: "KRYTYCZNY" },
-        { name: "Mapa Sektora", status: "ANALIZA", priority: "ŚREDNI" }
+        { name: "Spotkanie w bazie", status: "W OCZEKIWANIU" },
+        { name: "Zbieranie zapasów", status: "NIE ROZPOCZĘTE" },
+        { name: "Weryfikacja modów", status: "W TOKU" }
     ],
-    note: "OCZEKIWANIE NA START SERWERA. SPRAWDZIĆ MODPACKI. CEL: PRZEŻYĆ PIERWSZĄ NOC."
+    note: "SYSTEM PRAWNY USZKODZONY. REJESTR ZASAD NIEODNALEZIONY. PRZETRWAJ ZA WSZELKĄ CENĘ."
 };
 
 // --- RADIO LOGS ---
 function addSystemLog(msg, type = "INFO") {
-    const saved = JSON.parse(localStorage.getItem('f3logs') || '[]');
+    const logs = JSON.parse(localStorage.getItem('f3logs_v2') || '[]');
     const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    saved.push({ msg, type, time });
-    if (saved.length > 25) saved.shift();
-    localStorage.setItem('f3logs', JSON.stringify(saved));
+    logs.push({ msg, type, time });
+    if (logs.length > 20) logs.shift();
+    localStorage.setItem('f3logs_v2', JSON.stringify(logs));
     renderRadio();
 }
 
 function renderRadio() {
-    const saved = JSON.parse(localStorage.getItem('f3logs') || '[]');
-    const logContainer = document.getElementById("radioLog");
-    if(!logContainer) return;
-    
-    logContainer.innerHTML = saved.map(m => {
-        let style = "text-gray-500";
-        let pre = "[LOG]";
-        if (m.type === "JOIN") { style = "text-green-500"; pre = "[SYGNAŁ]"; }
-        if (m.type === "ALARM") { style = "text-red-500 font-bold"; pre = "[ALARM]"; }
-        if (m.type === "AMBIENT") { style = "text-blue-400 opacity-50"; pre = "[SZUM]"; }
-
-        return `<div class="mb-2 border-b border-white/5 pb-1">
-            <span class="${style}">${pre}</span> <span class="text-[9px] text-gray-700">${m.time}</span><br>
-            <span class="text-[10px] uppercase text-gray-300">${m.msg}</span>
-        </div>`;
+    const logs = JSON.parse(localStorage.getItem('f3logs_v2') || '[]');
+    const container = document.getElementById("radioLog");
+    if (!container) return;
+    container.innerHTML = logs.map(m => {
+        let clr = "text-gray-500";
+        if (m.type === "JOIN") clr = "text-green-500 font-bold";
+        if (m.type === "ALARM") clr = "text-red-600 font-bold";
+        if (m.type === "EVENT") clr = "text-yellow-500 font-bold";
+        return `<div class="mb-2 border-b border-white/5 pb-1"><span class="${clr}">[${m.type}]</span> <span class="text-[9px] text-gray-700 font-bold">${m.time}</span><br><span class="uppercase tracking-tighter opacity-90">${m.msg}</span></div>`;
     }).join('');
-    logContainer.scrollTop = logContainer.scrollHeight;
+    container.scrollTop = container.scrollHeight;
+}
+
+function adminResetRadio() {
+    radioResetCounter++;
+    if (radioResetCounter >= 3) {
+        const pass = prompt("PODAJ KOD RESETU RADIA:");
+        if (pass === "ferajna") {
+            localStorage.removeItem('f3logs_v2');
+            renderRadio();
+            addSystemLog("SYSTEM LOGÓW WYCZYSZCZONY PRZEZ ADMINA.", "EVENT");
+            alert("RADIO ZRESETOWANE.");
+        }
+        radioResetCounter = 0;
+    }
+}
+
+// --- BOUNTY SYSTEM ---
+function toggleBountyForm() { document.getElementById("bounty-form").classList.toggle("hidden"); }
+
+function submitBounty() {
+    const target = document.getElementById("b-target").value;
+    const reward = document.getElementById("b-reward").value;
+    const reason = document.getElementById("b-reason").value;
+    if (!target || !reward || !reason) { alert("WYPEŁNIJ WSZYSTKIE POLA!"); return; }
+
+    const bounties = JSON.parse(localStorage.getItem('f3bounties_v2') || '[]');
+    bounties.push({ 
+        id: Date.now(), 
+        target: target.toUpperCase(), 
+        reward: reward.toUpperCase(), 
+        reason, 
+        status: 'OCZEKIWANE', 
+        date: new Date().toLocaleDateString(),
+        completedAt: null 
+    });
+    localStorage.setItem('f3bounties_v2', JSON.stringify(bounties));
+    document.getElementById("b-target").value = ""; document.getElementById("b-reward").value = ""; document.getElementById("b-reason").value = "";
+    toggleBountyForm(); renderBounties();
+    addSystemLog(`Zgłoszono nowe zlecenie: ${target}`, "INFO");
+}
+
+function renderBounties() {
+    let bounties = JSON.parse(localStorage.getItem('f3bounties_v2') || '[]');
+    const container = document.getElementById("bounty-list");
+    if (!container) return;
+
+    // Usuwanie po 2 dniach (48h)
+    const now = Date.now();
+    const expiryTime = 2 * 24 * 60 * 60 * 1000;
+    bounties = bounties.filter(b => {
+        if (b.status === "ZREALIZOWANE" && b.completedAt && (now - b.completedAt > expiryTime)) return false;
+        return true;
+    });
+    localStorage.setItem('f3bounties_v2', JSON.stringify(bounties));
+
+    if (bounties.length === 0) { container.innerHTML = `<p class="text-[9px] text-gray-700 italic text-center uppercase">Brak zleceń...</p>`; updateTicker(); return; }
+
+    container.innerHTML = bounties.map(b => `
+        <div class="bounty-card p-2 relative ${b.status === 'ZATWIERDZONE' ? 'approved' : ''} ${b.status === 'ZREALIZOWANE' ? 'completed' : ''}" onclick="adminManageBounty(${b.id})">
+            <div class="flex items-center gap-3">
+                <img src="https://minotar.net/avatar/${b.target}/32" class="border border-zinc-800">
+                <div class="text-[10px] flex-1">
+                    <div class="flex justify-between items-start"><span class="target-name font-bold tracking-widest font-mono">${b.target}</span><span class="text-[8px] text-gray-600">${b.date}</span></div>
+                    <p class="${b.status === 'ZREALIZOWANE' ? 'text-green-700' : 'text-yellow-600'} font-bold">NAGRODA: ${b.reward}</p>
+                    <p class="text-gray-500 mt-1 italic leading-tight uppercase text-[9px] font-light">"${b.reason}"</p>
+                </div>
+            </div>
+            <div class="status-label absolute top-1 right-1 text-[7px] font-black uppercase ${b.status === 'ZREALIZOWANE' ? 'text-green-500' : 'text-red-900'}">
+                ${b.status === 'ZREALIZOWANE' ? '[EXECUTED]' : b.status}
+            </div>
+        </div>
+    `).join('');
+    updateTicker();
+}
+
+function adminManageBounty(id) {
+    const pass = prompt("KOD AUTORYZACJI:");
+    if (pass !== "ferajna") return;
+    const bounties = JSON.parse(localStorage.getItem('f3bounties_v2') || '[]');
+    const bIdx = bounties.findIndex(b => b.id === id);
+    const choice = prompt("WYBIERZ AKCJĘ:\n1 - ZATWIERDŹ (Publiczne)\n2 - ZREALIZOWANE (Zielone, 48h do zniknięcia)\n3 - USUŃ (Trwałe)");
+
+    if (choice === "1") { bounties[bIdx].status = "ZATWIERDZONE"; addSystemLog(`Zatwierdzono list gończy: ${bounties[bIdx].target}`, "EVENT"); }
+    else if (choice === "2") { bounties[bIdx].status = "ZREALIZOWANE"; bounties[bIdx].completedAt = Date.now(); addSystemLog(`Zlecenie wykonane: ${bounties[bIdx].target}`, "EVENT"); }
+    else if (choice === "3") { addSystemLog(`Zlecenie usunięte: ${bounties[bIdx].target}`, "INFO"); bounties.splice(bIdx, 1); }
+    localStorage.setItem('f3bounties_v2', JSON.stringify(bounties)); renderBounties();
+}
+
+// --- NEWS TICKER ---
+function updateTicker() {
+    const bounties = JSON.parse(localStorage.getItem('f3bounties_v2') || '[]');
+    const approved = bounties.filter(b => b.status === "ZATWIERDZONE");
+    let html = `SYSTEM: Zbliża się fala infekcji... &nbsp;&nbsp;&nbsp; | &nbsp;&nbsp;&nbsp; OSTRZEŻENIE: Brak czystej wody... &nbsp;&nbsp;&nbsp; | &nbsp;&nbsp;&nbsp; STATUS: Mobilizacja... &nbsp;&nbsp;&nbsp; | &nbsp;&nbsp;&nbsp; UWAGA: DATABASE_LOSS...`;
+    approved.forEach(b => { html += ` &nbsp;&nbsp;&nbsp; | &nbsp;&nbsp;&nbsp; <span class="text-white bg-red-600 px-1 font-mono">WANTED: ${b.target}</span> (REWARD: ${b.reward})`; });
+    document.getElementById("ticker-text").innerHTML = html;
 }
 
 // --- SERWER ---
-async function refreshServerStatus() {
-    const mainStatus = document.getElementById("server-status-main");
-    const sideStatus = document.getElementById("server-status-text");
+async function refreshStatus() {
+    const mainS = document.getElementById("server-status-main");
     const pList = document.getElementById("player-list");
-    const pCount = document.getElementById("player-count");
-
     try {
         const res = await fetch(`https://api.mcsrvstat.us/2/${serverIP}`);
         const data = await res.json();
-
         if (data.online) {
-            mainStatus.innerText = "ONLINE";
-            mainStatus.className = "text-2xl font-bold text-green-400";
-            sideStatus.innerText = "POŁĄCZENIE STABILNE";
-            sideStatus.className = "text-lg font-bold text-green-400";
-
+            mainS.innerText = "ONLINE"; mainS.className = "text-2xl font-bold text-green-400 animate-pulse font-mono";
             const players = data.players.list || [];
-            players.forEach(p => {
-                if (!lastPlayerList.includes(p)) addSystemLog(`OCALAŁY ${p} POŁĄCZONY.`, "JOIN");
-            });
-            lastPlayerList.forEach(p => {
-                if (!players.includes(p)) addSystemLog(`UTRACONO TĘTNO: ${p}.`, "ALARM");
-            });
+            players.forEach(p => { if (!lastPlayerList.includes(p)) addSystemLog(`Sygnał życia: ${p}.`, "JOIN"); });
+            lastPlayerList.forEach(p => { if (!players.includes(p)) addSystemLog(`Zanik sygnału: ${p}.`, "ALARM"); });
             lastPlayerList = players;
-
-            pList.innerHTML = players.map(p => `
-                <div class="flex items-center gap-2">
-                    <img src="https://minotar.net/helm/${p}/16" class="border border-green-900">
-                    <span class="text-green-500 uppercase text-xs">${p}</span>
-                </div>
-            `).join('');
-            pCount.innerText = `AKTYWNI: ${data.players.online}/${data.players.max}`;
+            pList.innerHTML = players.map(p => `<div class="flex items-center gap-3 border-b border-white/5 pb-1"><img src="https://minotar.net/helm/${p}/20" class="border border-green-900 shadow-sm"><span class="text-green-400 text-xs font-bold uppercase tracking-widest font-mono">${p}</span><span class="text-[8px] text-gray-600 ml-auto italic">LIVE</span></div>`).join('');
+            document.getElementById("player-count").innerText = `OCALAŁYCH: ${data.players.online}/${data.players.max}`;
+            document.getElementById("server-status-text").innerText = "ŁĄCZNOŚĆ STABILNA";
+            document.getElementById("server-status-text").className = "text-sm font-bold text-green-400 uppercase italic";
         } else {
-            mainStatus.innerText = "OFFLINE";
-            mainStatus.className = "text-2xl font-bold text-red-600";
-            sideStatus.innerText = "BRAK SYGNAŁU";
-            sideStatus.className = "text-lg font-bold text-red-600";
-            pList.innerHTML = "<p class='text-gray-700 italic text-xs'>Skanowanie pustki...</p>";
-            pCount.innerText = "SERWER NIEAKTYWNY";
+            mainS.innerText = "OFFLINE"; mainS.className = "text-2xl font-bold text-red-600 italic font-mono";
+            pList.innerHTML = "<div class='text-gray-800 text-xs italic uppercase tracking-tighter'>Skanowanie martwej strefy...</div>";
+            document.getElementById("server-status-text").innerText = "POZA ZASIĘGIEM";
+            document.getElementById("server-status-text").className = "text-sm font-bold text-red-600 uppercase italic";
         }
-    } catch (e) { mainStatus.innerText = "BŁĄD"; }
+    } catch (e) { mainS.innerText = "BŁĄD"; }
 }
 
-// --- ADMIN ---
-function updateObjectiveUI() {
+// --- ADMIN & ZASILANIE ---
+function updateUI() {
     document.getElementById('op-name').innerText = objectiveData.name;
     document.getElementById('op-phase').innerText = objectiveData.phase;
-    document.getElementById('op-percent-text').innerText = objectiveData.percent + "%";
     document.getElementById('op-bar').style.width = objectiveData.percent + "%";
-    document.getElementById('op-intel-note').innerText = objectiveData.note;
-
+    document.getElementById('op-intel-note').innerText = `"${objectiveData.note}"`;
     const list = document.getElementById('op-items-list');
-    list.innerHTML = objectiveData.items.map(item => `
-        <div class="grid grid-cols-3 text-gray-400 py-0.5 border-b border-zinc-900/30 text-center">
-            <span>▸ ${item.name}</span>
-            <span class="text-yellow-600">${item.status}</span>
-            <span class="text-[8px] ${item.priority === 'KRYTYCZNY' ? 'text-red-500' : 'text-gray-600'}">${item.priority}</span>
-        </div>
-    `).join('');
+    list.innerHTML = objectiveData.items.map(i => `<div class="flex justify-between border-b border-zinc-900/50 pb-1"><span class="text-gray-400 font-bold uppercase text-[10px]">▸ ${i.name}</span><span class="text-yellow-600 font-bold uppercase text-[10px]">${i.status || 'AKTYWNE'}</span></div>`).join('');
 }
 
 function adminClick() {
     adminCounter++;
     if (adminCounter >= 3) {
-        const pass = prompt("AUTORYZACJA:");
+        const pass = prompt("KOD ADMINA:");
         if (pass === "ferajna") {
-            objectiveData.name = prompt("OPERACJA:", objectiveData.name) || objectiveData.name;
-            objectiveData.phase = prompt("FAZA:", objectiveData.phase) || objectiveData.phase;
-            objectiveData.percent = prompt("PROCENT:", objectiveData.percent) || objectiveData.percent;
-            objectiveData.note = prompt("NOTATKA:", objectiveData.note) || objectiveData.note;
-            updateObjectiveUI();
+            objectiveData.name = prompt("CEL:", objectiveData.name);
+            objectiveData.phase = prompt("STATUS:", objectiveData.phase);
+            objectiveData.percent = prompt("PROCENT:", objectiveData.percent);
+            objectiveData.note = prompt("NOTATKA:", objectiveData.note);
+            updateUI();
         }
         adminCounter = 0;
     }
 }
 
-// --- ZASILANIE ---
 function togglePower() {
-    const isPwr = document.body.classList.toggle("power-on");
-    const btn = document.getElementById("powerBtn");
-    const audioGen = document.getElementById("powerSound");
-    const audioHum = document.getElementById("humSound");
-    
-    btn.innerText = isPwr ? "ZASILANIE: ON" : "ZASILANIE: OFF";
-    
-    if (isPwr) { 
-        btn.classList.add("bg-green-600", "text-black"); 
-        audioGen.play().catch(() => {});
-        if(audioHum) {
-            audioHum.volume = 0.15;
-            audioHum.play().catch(() => {});
-        }
-    } else { 
-        btn.classList.remove("bg-green-600", "text-black"); 
-        audioGen.pause(); 
-        if(audioHum) audioHum.pause();
+    if (isSystemCrashing) return;
+    const body = document.body; const btn = document.getElementById("powerBtn");
+    const errorScr = document.getElementById("error-screen");
+    const audioGen = document.getElementById("powerSound"); const audioHum = document.getElementById("humSound");
+
+    if (body.classList.contains("power-on")) {
+        body.classList.remove("power-on"); btn.innerText = "Zasilanie: OFF"; btn.classList.remove("bg-green-600", "text-black");
+        audioGen.pause(); audioHum.pause(); return;
+    }
+
+    isSystemCrashing = true; const isSuccess = Math.random() > 0.5;
+    if (isSuccess) {
+        btn.innerText = "BOOTING..."; body.classList.add("crashing");
+        setTimeout(() => {
+            body.classList.remove("crashing"); body.classList.add("power-on"); btn.innerText = "Zasilanie: ON";
+            btn.classList.add("bg-green-600", "text-black"); audioGen.play().catch(()=>{}); audioHum.play().catch(()=>{}); audioHum.volume = 0.12;
+            isSystemCrashing = false; addSystemLog("Zasilanie przywrócone.", "INFO");
+        }, 1200);
+    } else {
+        btn.innerText = "SYSTEM ERROR"; btn.classList.add("bg-red-900", "text-white"); body.classList.add("crashing");
+        setTimeout(() => { errorScr.classList.remove("hidden"); }, 1400);
+        setTimeout(() => {
+            body.classList.remove("crashing"); errorScr.classList.add("hidden"); btn.innerText = "Zasilanie: OFF";
+            btn.classList.remove("bg-red-900", "text-white"); isSystemCrashing = false;
+            addSystemLog("BŁĄD ZASILANIA: SPIĘCIE RDZENIA.", "ALARM");
+            alert("ALARM: Przeciążenie sieci. Spróbuj ponownie.");
+        }, 4500);
     }
 }
 
-// --- INNE ---
-function copyIP() {
-    navigator.clipboard.writeText(serverIP);
-    alert("Współrzędne skopiowane do schowka.");
-}
-
+// --- UTILS ---
+function copyIP() { navigator.clipboard.writeText(serverIP); alert("IP skopiowane."); }
 function changeCamera() {
     const img = document.getElementById('cctv-img');
-    img.style.opacity = "0.1";
-    setTimeout(() => { img.style.opacity = "0.4"; }, 150);
+    const coords = [`X: ${Math.floor(Math.random()*1500)} Z: ${Math.floor(Math.random()*1500)}`, `X: -320 Z: 890`, `X: 0 Z: 0` ];
+    document.getElementById('cctv-coords').innerText = coords[Math.floor(Math.random()*coords.length)];
+    img.style.opacity = "0.1"; setTimeout(() => { img.style.opacity = "0.4"; }, 150);
 }
 
-function glitchRadioText() {
-    const radioItems = document.querySelectorAll('#radioLog div span:last-child');
-    if (radioItems.length === 0) return;
-    const target = radioItems[Math.floor(Math.random() * radioItems.length)];
-    const originalText = target.innerText;
-    const chars = "!@#$%^&*()_+";
-    let glitchedText = originalText.split('').map(char => Math.random() > 0.8 ? chars[Math.floor(Math.random() * chars.length)] : char).join('');
-    target.innerText = glitchedText;
-    target.style.color = "#ff0000";
-    setTimeout(() => { target.innerText = originalText; target.style.color = ""; }, 150);
-}
-
-const updateAll = () => {
+const tick = () => {
     const now = new Date();
     const diff = Math.floor((now - serverStartDate) / (1000 * 60 * 60 * 24));
     document.getElementById("days").innerText = diff > 0 ? diff : 0;
     document.getElementById('cctv-time').innerText = now.toLocaleTimeString();
 };
 
-updateAll();
-setInterval(updateAll, 1000);
-setInterval(refreshServerStatus, 30000);
-setInterval(() => { if (document.body.classList.contains('power-on')) glitchRadioText(); }, 5000);
-refreshServerStatus();
-renderRadio();
-updateObjectiveUI();
+tick(); setInterval(tick, 1000); setInterval(refreshStatus, 30000);
+setInterval(() => { 
+    if (document.body.classList.contains('power-on')) { 
+        const logs = document.querySelectorAll('#radioLog div span:last-child');
+        if (logs.length > 0) {
+            const t = logs[Math.floor(Math.random() * logs.length)];
+            const o = t.innerText;
+            t.innerText = o.split('').map(c => Math.random() > 0.8 ? "!@#$%^&"[Math.floor(Math.random()*7)] : c).join('');
+            t.style.color = "#ff0000";
+            setTimeout(() => { t.innerText = o; t.style.color = ""; }, 150);
+        }
+    }
+}, 5000);
+refreshStatus(); renderRadio(); updateUI(); renderBounties();

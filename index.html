@@ -2,157 +2,147 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8" />
-    <title>FERAJNAV3 :: COMMAND CENTER</title>
+    <title>FERAJNAV3 :: TERMINAL</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="style.css" />
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;500;700&display=swap" rel="stylesheet">
-    <link rel="icon" type="image/png" href="Ferajnav3.jpg">
+    <link rel="icon" type="image/x-icon" href="favicon.ico?v=9">
 </head>
 
 <body class="crt-flicker">
 <div id="monitor-overlay"></div>
 
-<div class="fixed bottom-16 right-4 w-56 terminal p-2 text-[10px] z-50 bg-black shadow-2xl border-green-900/50">
-    <div class="flex justify-between border-b border-green-900 pb-1 mb-1">
-        <span>CAM-03 (STREFA ZERO)</span>
-        <span class="text-red-500 animate-pulse font-bold">● REC</span>
+<div id="error-screen" class="hidden fixed inset-0 z-[200] bg-black flex flex-col items-center justify-center text-red-600 font-bold">
+    <div class="text-9xl mb-4 animate-pulse uppercase">Error</div>
+    <div class="text-xl tracking-[0.5em] uppercase text-center">Critical System Failure<br><span class="text-sm font-normal">Power Grid Unstable</span></div>
+    <div class="mt-8 text-[10px] text-red-900 font-mono italic">CODE: 0x000F3_FERAJNA // REBOOT_REQUIRED...</div>
+</div>
+
+<div class="fixed bottom-24 right-4 w-56 terminal p-2 text-[10px] z-50 bg-black shadow-2xl border-green-900/50">
+    <div class="flex justify-between border-b border-green-900 pb-1 mb-1 text-green-500 font-bold uppercase">
+        <span>CAM-03 (SEKTOR-X)</span>
+        <span class="text-red-500 animate-pulse">● REC</span>
     </div>
     <div class="relative bg-zinc-900 overflow-hidden h-24 cursor-crosshair" onclick="changeCamera()">
-        <img id="cctv-img"  class="opacity-40 grayscale contrast-125 w-full h-full object-cover transition-opacity">
-        <div class="absolute inset-0 flex items-center justify-center opacity-10 pointer-events-none text-[8px]">SCANNING...</div>
+        <img id="cctv-img" src="https://i.imgur.com/3ZQ3Z2U.gif" class="opacity-40 grayscale contrast-125 w-full h-full object-cover">
     </div>
-    <div class="mt-1 text-gray-500 flex justify-between">
+    <div class="mt-1 text-gray-500 flex justify-between tracking-tighter">
         <span id="cctv-time">00:00:00</span>
-        <span id="cctv-coords">X: 124 Z: -542</span>
+        <span id="cctv-coords">X: 0 Z: 0</span>
     </div>
 </div>
 
 <div class="max-w-5xl mx-auto p-4 md:p-8 relative z-10">
     <header class="terminal p-8 mb-6 border-b-4 border-red-900">
-        <div class="flex flex-col md:flex-row justify-between items-center gap-4">
-            <div class="text-left">
+        <div class="flex flex-col md:flex-row justify-between items-center gap-4 text-center md:text-left">
+            <div>
                 <h1 class="text-5xl md:text-7xl font-extrabold glitch-text text-red-600 tracking-tighter uppercase">Ferajnav3</h1>
-                <p class="text-green-500 opacity-80 uppercase tracking-widest text-xs mt-2">Sektor: DeceasedCraft // Protokół: Survival</p>
+                <p class="text-green-500 opacity-80 uppercase tracking-widest text-[10px] mt-2 font-bold italic">Terminal Przetrwania // DeceasedCraft OS</p>
             </div>
             <div class="text-right border-l border-green-900 pl-6 hidden md:block">
-                <p class="text-xs text-gray-500 uppercase">Poziom Zagrożenia</p>
-                <p id="threat-level" class="text-2xl text-red-500 font-bold animate-pulse">KRYTYCZNY</p>
+                <p class="text-xs text-gray-500 uppercase italic">Zagrożenie</p>
+                <p id="threat-level" class="text-2xl text-red-600 font-bold animate-pulse uppercase">Krytyczne</p>
             </div>
         </div>
         
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8 border-t border-green-900 pt-6">
-            <div>
-                <p class="text-xs text-gray-500 uppercase">Dni od wybuchu</p>
-                <p class="text-2xl font-bold" id="days">0</p>
-            </div>
-            <div>
-                <p class="text-xs text-gray-500 uppercase">Status Systemu</p>
-                <p id="server-status-main" class="text-2xl font-bold text-red-500">OFFLINE</p>
-            </div>
+            <div><p class="text-xs text-gray-500 uppercase">Dni od Infekcji</p><p class="text-2xl font-bold text-gray-200" id="days">0</p></div>
+            <div><p class="text-xs text-gray-500 uppercase">Łączność</p><p id="server-status-main" class="text-2xl font-bold text-red-600 italic">OFFLINE</p></div>
             <div class="col-span-2">
-                <p class="text-xs text-gray-500 uppercase">Współrzędne (IP)</p>
-                <p class="text-xl font-bold text-red-400 cursor-pointer hover:text-red-300" onclick="copyIP()">ferajnav3.aternos.me</p>
+                <p class="text-xs text-gray-500 uppercase italic font-bold">Sygnał Bazy (IP)</p>
+                <p class="text-xl font-bold text-red-400 cursor-pointer hover:text-red-300 transition-colors uppercase font-mono" onclick="copyIP()">ferajnav3.aternos.me</p>
             </div>
         </div>
 
         <div class="flex flex-wrap gap-4 mt-6">
-            <button onclick="copyIP()" class="btn-tactical px-6 py-2 text-sm font-bold bg-red-900/20 uppercase">Kopiuj IP</button>
-            <button onclick="togglePower()" id="powerBtn" class="border border-green-500 px-6 py-2 text-sm font-bold text-green-500 hover:bg-green-500 hover:text-black transition-all uppercase">Zasilanie: OFF</button>
-          </div>
+            <button onclick="copyIP()" class="btn-tactical px-6 py-2 text-xs font-bold uppercase tracking-widest">Kopiuj IP</button>
+            <button onclick="togglePower()" id="powerBtn" class="border border-green-500 px-6 py-2 text-xs font-bold text-green-500 uppercase tracking-widest transition-all">Zasilanie: OFF</button>
+        </div>
     </header>
 
     <div class="grid md:grid-cols-3 gap-6">
         <div class="md:col-span-2 space-y-6">
-            <section id="objective-section" class="terminal p-6 border-l-4 border-yellow-600">
-                <div class="flex justify-between items-start mb-4">
-                    <h2 class="text-xl text-yellow-500 flex items-center tracking-tighter uppercase">
-                        <span class="mr-2 cursor-pointer opacity-50 hover:opacity-100" onclick="adminClick()">🔧</span> 
-                        Operacja: <span id="op-name">Wczytywanie...</span>
+            <section id="objective-section" class="terminal p-0 overflow-hidden border-l-4 border-yellow-600">
+                <div class="bg-yellow-600/10 p-4 border-b border-yellow-600/30 flex justify-between items-center">
+                    <h2 class="text-xl text-yellow-500 font-bold uppercase tracking-tighter">
+                        <span class="mr-2 cursor-pointer opacity-70 hover:opacity-100" onclick="adminClick()">📡</span> 
+                        Biuletyn: <span id="op-name">Wczytywanie...</span>
                     </h2>
-                    <span class="text-[10px] bg-yellow-900/30 text-yellow-500 px-2 py-1 border border-yellow-900">FAZA: <span id="op-phase">0/0</span></span>
+                    <span id="op-phase" class="text-[10px] font-bold bg-yellow-600 text-black px-2 py-0.5 rounded uppercase font-bold">Status</span>
                 </div>
-                <div class="grid md:grid-cols-2 gap-6">
+                <div class="p-6 grid md:grid-cols-2 gap-6 bg-black/40">
                     <div class="space-y-4">
-                        <div class="flex justify-between text-[10px] mb-1 uppercase text-gray-400">
-                            <span>Postęp Przygotowań</span>
-                            <span id="op-percent-text">0%</span>
-                        </div>
-                        <div class="w-full bg-zinc-900 h-3 border border-green-900 p-0.5">
+                        <p class="text-[10px] text-gray-500 uppercase mb-1 font-bold">Postęp Operacji:</p>
+                        <div class="w-full bg-zinc-900 h-2 border border-green-900/30">
                             <div id="op-bar" class="bg-yellow-600 h-full shadow-[0_0_10px_#ca8a04] transition-all duration-1000" style="width:0%"></div>
                         </div>
-                        <div class="text-[10px] border border-zinc-800 bg-black/40">
-                            <div class="grid grid-cols-3 border-b border-zinc-800 p-1 bg-zinc-900/50 text-gray-500 uppercase text-center">
-                                <span>Przedmiot</span>
-                                <span>Stan</span>
-                                <span>Priorytet</span>
-                            </div>
-                            <div id="op-items-list" class="p-1 space-y-1"></div>
-                        </div>
+                        <div class="text-[11px] space-y-3" id="op-items-list"></div>
                     </div>
-                    <div class="relative group border border-zinc-800 p-1 bg-black h-full">
-                        <div class="overflow-hidden relative h-32 bg-zinc-900">
-                            <img id="op-intel-img" src="Ferajnav3.jpg" class="grayscale sepia(30%) contrast-125 opacity-30 w-full h-full object-cover">
-                        </div>
-                        <p id="op-intel-note" class="text-[10px] text-gray-500 mt-2 italic font-light"></p>
+                    <div class="border border-zinc-800 p-3 bg-zinc-900/40 relative">
+                        <p class="text-[9px] text-gray-600 border-b border-zinc-800 mb-2 pb-1 uppercase font-bold">Briefing:</p>
+                        <p id="op-intel-note" class="text-xs text-gray-300 leading-relaxed italic"></p>
                     </div>
                 </div>
             </section>
 
             <section class="terminal p-6">
-                <h2 class="text-xl text-red-500 mb-4 flex items-center uppercase tracking-tighter">
-                    <span class="mr-2">📻</span> Logi Radiowe 77.4 MHz
+                <h2 class="text-xl text-red-600 mb-4 flex items-center uppercase tracking-tighter font-bold">
+                    <span class="mr-2 animate-pulse cursor-pointer" onclick="adminResetRadio()">📻</span> Częstotliwość Ratunkowa
                 </h2>
-                <div id="radioLog" class="h-64 overflow-y-auto space-y-2 mb-2 bg-black/50 p-4 border border-green-900/30"></div>
+                <div id="radioLog" class="h-64 overflow-y-auto space-y-2 mb-2 bg-black/70 p-4 border border-green-900/20 text-[11px]"></div>
             </section>
         </div>
 
         <div class="space-y-6">
-            <section class="terminal p-6 border-l-4 border-blue-500">
-                <h2 class="text-xl text-blue-400 mb-4 flex items-center uppercase tracking-tighter">
-                    <span class="mr-2">👥</span> Ocalali
-                </h2>
+            <section class="terminal p-6 border-l-4 border-blue-500 bg-blue-900/5">
+                <h2 class="text-xl text-blue-500 mb-4 uppercase tracking-tighter font-bold font-mono">Sygnatury Życia</h2>
                 <div id="player-status" class="mb-4">
-                    <p class="text-xs text-gray-500 uppercase">Łączność:</p>
-                    <p id="server-status-text" class="text-lg font-bold text-red-600">BRAK SYGNAŁU</p>
+                    <p id="server-status-text" class="text-sm font-bold text-red-600 uppercase italic">Poza zasięgiem...</p>
                 </div>
-                <div id="player-list" class="space-y-2 text-sm min-h-[50px]"></div>
-                <p id="player-count" class="text-[10px] text-gray-600 mt-4 uppercase border-t border-zinc-900 pt-2"></p>
+                <div id="player-list" class="space-y-3"></div>
+                <p id="player-count" class="text-[10px] text-gray-600 mt-4 uppercase border-t border-zinc-900 pt-3 font-bold"></p>
             </section>
 
-            <section class="terminal p-6">
-                <h2 class="text-xl text-red-500 mb-4 uppercase tracking-tighter">Protokół</h2>
-                <ul class="text-[11px] space-y-4 text-gray-400">
-                    <li class="flex items-start">
-                        <span class="mr-2 text-red-600 font-bold">I.</span>
-                        <span>Dobra wspólne to przeżycie. Szaber trafia do magazynu centralnego.</span>
-                    </li>
-                    <li class="flex items-start">
-                        <span class="mr-2 text-red-600 font-bold">II.</span>
-                        <span>W ciszy bezpieczniej. Nie używaj broni palnej bez potrzeby.</span>
-                    </li>
-                    <li class="flex items-start">
-                        <span class="mr-2 text-red-600 font-bold">III.</span>
-                        <span>Zainfekowani są eliminowani natychmiastowo. <span class="redacted px-1">BRAK WYJĄTKÓW</span>.</span>
-                    </li>
-                </ul>
+            <section class="terminal p-6 border-l-4 border-red-600 bg-red-900/5">
+                <h2 class="text-xl text-red-500 mb-4 uppercase tracking-tighter font-bold flex justify-between items-center font-mono">
+                    <span>🎯 Bounty</span>
+                    <button onclick="toggleBountyForm()" class="text-[10px] bg-red-900/40 px-2 py-1 border border-red-600 hover:bg-red-600 hover:text-black transition-all font-bold uppercase">Dodaj +</button>
+                </h2>
+                <div id="bounty-form" class="hidden mb-6 p-3 border border-red-900/30 bg-black/80 space-y-2">
+                    <input id="b-target" type="text" placeholder="NICK POSZUKIWANEGO" class="w-full bg-zinc-900 border border-red-900/50 p-1 text-[10px] text-red-500 focus:outline-none uppercase">
+                    <input id="b-reward" type="text" placeholder="NAGRODA" class="w-full bg-zinc-900 border border-red-900/50 p-1 text-[10px] text-red-500 focus:outline-none uppercase">
+                    <textarea id="b-reason" placeholder="POWÓD..." class="w-full bg-zinc-900 border border-red-900/50 p-1 text-[10px] text-red-500 h-12 focus:outline-none uppercase"></textarea>
+                    <button onclick="submitBounty()" class="w-full bg-red-900 text-black font-bold py-1 text-[10px] hover:bg-red-600 transition-all uppercase">Opublikuj List Gończy</button>
+                </div>
+                <div id="bounty-list" class="space-y-3 max-h-80 overflow-y-auto pr-1"></div>
+            </section>
+
+            <section class="terminal p-6 border-l-4 border-red-900 bg-red-900/5">
+                <h2 class="text-lg text-red-500 mb-4 uppercase font-bold">Status Prawny</h2>
+                <div class="text-[10px] space-y-4 text-gray-500 uppercase font-bold tracking-tight">
+                    <p class="text-red-600 animate-pulse font-black">!! ERROR: DATABASE_LOSS !!</p>
+                    <p>W Strefie Zero stare prawo przestało obowiązywać. System nie odnalazł żadnych reguł.</p>
+                    <p class="text-gray-300 italic">
+                        "<span class="redacted cursor-help uppercase font-bold">Przetrwaj za wszelką cenę.</span>"
+                    </p>
+                </div>
             </section>
         </div>
     </div>
 </div>
 
-<div class="fixed bottom-4 left-0 w-full bg-red-900/30 border-t border-b border-red-900/50 py-1 overflow-hidden z-[60] whitespace-nowrap pointer-events-none">
-    <div class="inline-block animate-marquee uppercase tracking-widest text-red-500 text-[10px]">
-        OSTRZEŻENIE: Wirus przenosi się przez kontakt bezpośredni. &nbsp;&nbsp; | &nbsp;&nbsp; 
-        ZAPASY WODY W SEKTORZE MIEJSKIM SKAŻONE. &nbsp;&nbsp; | &nbsp;&nbsp; 
-        SŁUŻBY CYWILNE PRZESTAŁY ISTNIEĆ. &nbsp;&nbsp; | &nbsp;&nbsp; 
-        FERAJNA V3: OSTATNIA LINIA OBRONY. &nbsp;&nbsp; | &nbsp;&nbsp; 
-        OSTRZEŻENIE: Wirus przenosi się przez kontakt bezpośredni.
+<div class="fixed bottom-10 left-0 w-full bg-red-900/20 border-t border-b border-red-900/40 py-1.5 overflow-hidden z-[60] whitespace-nowrap pointer-events-none">
+    <div id="ticker-text" class="inline-block animate-marquee uppercase tracking-widest text-red-500 text-[10px] font-bold">
+        SYSTEM: Zbliża się kolejna fala infekcji... &nbsp;&nbsp;&nbsp; | &nbsp;&nbsp;&nbsp; 
+        OSTRZEŻENIE: Brak czystej wody w promieniu 500 metrów... &nbsp;&nbsp;&nbsp; | &nbsp;&nbsp;&nbsp; 
+        STATUS: Mobilizacja trwa... &nbsp;&nbsp;&nbsp; | &nbsp;&nbsp;&nbsp; 
+        UWAGA: DATABASE_LOSS... BRAK ZASAD PRAWNYCH...
     </div>
 </div>
 
-<footer class="mt-12 text-center text-[10px] text-gray-700 uppercase pb-24">
-    Własność: Ferajnav3 // System: DeceasedCraft Terminal v.1.0
+<footer class="mt-8 text-center text-[9px] text-gray-800 uppercase pb-40">
+    System: F3-OS // Hardware: Aternos S1 // User: Admin
 </footer>
 
 <audio id="powerSound" loop><source src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_46f91c44f2.mp3" type="audio/mpeg"></audio>
