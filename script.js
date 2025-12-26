@@ -292,21 +292,48 @@ async function finishBoot(user) {
 
 async function togglePower() {
     if (isSystemCrashing) return;
-    const body = document.body;
+    const body = document.body; 
+    const btn = document.getElementById("powerBtn");
+    const errorScr = document.getElementById("error-screen");
+    const audioGen = document.getElementById("powerSound");
+    const audioHum = document.getElementById("humSound");
+
     if (body.classList.contains("power-on")) {
-        body.classList.remove("power-on"); document.getElementById("powerBtn").innerText = "Power: OFF";
-        document.getElementById("powerSound").pause(); document.getElementById("humSound").pause();
-        currentUser = null; return;
+        body.classList.remove("power-on", "glitch-active");
+        btn.innerText = "Power: OFF"; btn.classList.remove("bg-green-600", "text-black");
+        audioGen.pause(); audioHum.pause(); currentUser = null; return;
     }
-    isSystemCrashing = true; body.classList.add("crashing");
-    await new Promise(r => setTimeout(r, 1000)); body.classList.remove("crashing");
-    const success = await runBootSequence();
-    if (success) {
-        await finishBoot(currentUser);
-        body.classList.add("power-on"); document.getElementById("powerBtn").innerText = "Power: ON";
-        document.getElementById("powerSound").play().catch(()=>{}); document.getElementById("humSound").play().catch(()=>{});
-        isSystemCrashing = false;
-    } else { isSystemCrashing = false; body.classList.add("crashing"); setTimeout(()=>body.classList.remove("crashing"), 500); }
+
+    isSystemCrashing = true;
+    btn.innerText = "BOOTING...";
+    body.classList.add("crashing");
+    
+    await new Promise(r => setTimeout(r, 1000));
+    body.classList.remove("crashing");
+
+    if (Math.random() < 0.3) {
+        btn.innerText = "FATAL ERROR";
+        btn.classList.add("bg-red-900", "text-white");
+        errorScr.classList.remove("hidden");
+        
+        setTimeout(() => {
+            errorScr.classList.add("hidden");
+            btn.innerText = "Power: OFF";
+            btn.classList.remove("bg-red-900", "text-white");
+            isSystemCrashing = false;
+        }, 4000);
+    } else {
+        const loginSuccess = await runBootSequence();
+        if (loginSuccess) {
+            await finishBoot(currentUser);
+            body.classList.add("power-on");
+            btn.innerText = "Power: ON"; 
+            btn.classList.add("bg-green-600", "text-black");
+            audioGen.play().catch(()=>{}); 
+            audioHum.play().catch(()=>{});
+            isSystemCrashing = false;
+        }
+    }
 }
 
 // ======================================================
@@ -374,7 +401,6 @@ async function refreshStatus() {
         mainS.className = "text-2xl font-bold text-yellow-600 italic";
     }
 }
-
 const tick = () => {
     const now = new Date();
     const diff = Math.floor((now - serverStartDate) / (1000 * 60 * 60 * 24));
@@ -391,6 +417,146 @@ function updateTicker(bounties) {
     let html = `SYSTEM: Infection wave approaching... &nbsp;&nbsp;&nbsp; | &nbsp;&nbsp;&nbsp; WARNING: Water contamination...`;
     approved.forEach(b => { html += ` &nbsp;&nbsp;&nbsp; | &nbsp;&nbsp;&nbsp; <span class="text-white bg-red-600 px-2 font-black">POSZUKIWANY: ${b.target}</span> (NAGRODA: ${b.reward})`; });
     document.getElementById("ticker-text").innerHTML = html;
+}
+
+
+// Nasłuchiwanie stanu alarmu w czasie rzeczywistym
+db.ref('system_alert').on('value', (snap) => {
+    const isAlert = snap.val();
+    if (isAlert) {
+        document.body.classList.add("glitch-active");
+        document.getElementById("threat-level").innerText = "CRITICAL - BLOOD MOON";
+        document.getElementById("threat-level").classList.add("text-white", "bg-red-600", "px-2");
+    } else {
+        document.body.classList.remove("glitch-active");
+        document.getElementById("threat-level").innerText = "STABLE";
+        document.getElementById("threat-level").classList.remove("text-white", "bg-red-600");
+    }
+});
+
+// Funkcja dla Admina do przełączania alarmu
+function adminToggleAlert() {
+    if (!currentUser || currentUser.uid !== adminUID) return;
+    db.ref('system_alert').once('value', snap => {
+        const current = snap.val();
+        db.ref('system_alert').set(!current);
+        addSystemLog(current ? "ALARM ODWOŁANY." : "OGŁOSZONO STAN KRYTYCZNY!", current ? "INFO" : "ALARM");
+    });
+}
+
+// Synchronizacja bazy współrzędnych
+db.ref('intel').on('value', (snap) => {
+    const data = snap.val();
+    const container = document.getElementById("intel-list");
+    if (!container || !data) return;
+
+    container.innerHTML = Object.values(data).map(i => `
+        <div class="border border-zinc-800 p-2 bg-black/40">
+            <div class="flex justify-between text-yellow-600 font-bold mb-1">
+                <span>${i.location.toUpperCase()}</span>
+                <span>${i.coords}</span>
+            </div>
+            <p class="text-gray-500 italic text-[8px]">${i.note}</p>
+        </div>
+    `).join('');
+});
+
+// ======================================================
+// --- SYSTEM INTEL / KORDY (SYNCHRONIZACJA) ---
+// ======================================================
+
+// 1. Pobieranie kordów z bazy u wszystkich graczy (Widoczne dla każdego w czasie rzeczywistym)
+db.ref('intel').on('value', (snap) => {
+    const data = snap.val();
+    const container = document.getElementById("intel-list");
+    if (!container) return;
+    
+    // Jeśli baza jest pusta
+    if (!data) { 
+        container.innerHTML = `<p class="text-[9px] text-gray-700 italic opacity-50 text-center w-full">BRAK DANYCH WYWIADOWCZYCH W BAZIE...</p>`; 
+        return; 
+    }
+
+    // Zamiana obiektu z Firebase na tablicę i sortowanie od najnowszych
+    const intelItems = Object.keys(data).map(key => ({ id: key, ...data[key] }));
+    
+    container.innerHTML = intelItems.reverse().map(i => {
+        // Kolorowanie ramki na podstawie poziomu zagrożenia
+        let threatColor = "border-zinc-800";
+        let threatText = "STABILNY";
+        
+        if (i.threat === "low") { threatColor = "border-green-900/50"; threatText = "NISKIE"; }
+        if (i.threat === "med") { threatColor = "border-yellow-600/50"; threatText = "ŚREDNIE"; }
+        if (i.threat === "high") { 
+            threatColor = "border-red-600 shadow-[inset_0_0_10px_rgba(220,38,38,0.2)]"; 
+            threatText = "WYSOKIE (ZAGROŻENIE)"; 
+        }
+
+        return `
+            <div class="border ${threatColor} p-3 bg-black/40 transition-all hover:bg-black/60">
+                <div class="flex justify-between text-yellow-600 font-black mb-1">
+                    <span class="text-xs">▸ ${i.location.toUpperCase()}</span>
+                    <span class="bg-black px-1 border border-zinc-800 text-[9px]">${i.coords}</span>
+                </div>
+                <p class="text-gray-500 italic text-[9px] mb-2 leading-tight">"${i.note}"</p>
+                <div class="text-[7px] text-zinc-700 flex justify-between items-center uppercase font-bold border-t border-white/5 pt-2">
+                    <span>${threatText} // REPORTER: ${i.reporter}</span>
+                    ${(currentUser && currentUser.uid === adminUID) ? 
+                        `<button onclick="deleteIntel('${i.id}')" class="text-red-900 hover:text-red-500 underline">[ REMOVE ]</button>` : ''}
+                </div>
+            </div>
+        `;
+    }).join('');
+});
+
+// 2. Wysyłanie kordów do bazy (Synchronizacja z chmurą Firebase)
+function submitIntel() {
+    if (!currentUser) { alert("WYMAGANA AUTORYZACJA BIOS!"); return; }
+    
+    const location = document.getElementById("i-location").value.trim();
+    const coords = document.getElementById("i-coords").value.trim();
+    const note = document.getElementById("i-note").value.trim();
+    const threat = document.getElementById("i-threat").value; // Pobranie wybranego poziomu zagrożenia
+
+    if (!location || !coords || !note) { 
+        alert("BŁĄD: WYPEŁNIJ WSZYSTKIE POLA RAPORTU."); 
+        return; 
+    }
+
+    // Push wysyła dane do Firebase, co automatycznie wyzwala funkcję .on('value') u wszystkich
+    db.ref('intel').push({
+        location: location,
+        coords: coords,
+        note: note,
+        threat: threat,
+        reporter: currentUser.email.split('@')[0].toUpperCase(),
+        timestamp: Date.now()
+    }).then(() => {
+        // Czyścimy formularz po sukcesie
+        document.getElementById("i-location").value = "";
+        document.getElementById("i-coords").value = "";
+        document.getElementById("i-note").value = "";
+        toggleIntelForm();
+        addSystemLog(`INTEL_UPLOADED: ${location.toUpperCase()}`, "EVENT");
+    }).catch((error) => {
+        console.error("Błąd zapisu:", error);
+        alert("BŁĄD POŁĄCZENIA Z BAZĄ DANYCH.");
+    });
+}
+
+function toggleIntelForm() {
+    if (!currentUser) { alert("DOSTĘP ZABLOKOWANY."); return; }
+    const form = document.getElementById("intel-form");
+    form.classList.toggle("hidden");
+}
+
+function deleteIntel(id) {
+    if (currentUser && currentUser.uid === adminUID) {
+        if(confirm("CZY NA PEWNO USUNĄĆ TEN RAPORT WYWIADU?")) {
+            db.ref('intel/' + id).remove();
+            addSystemLog("INTEL_ENTRY_REMOVED", "ALARM");
+        }
+    }
 }
 
 tick(); setInterval(tick, 1000); setInterval(refreshStatus, 30000); refreshStatus();
