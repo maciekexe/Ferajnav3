@@ -4,6 +4,29 @@ html, body {
   color: #9aff9a; overflow-x: hidden; position: relative;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  
+}
+html, body {
+  /* Zwiększamy bazę, aby jednostki rem/em były większe */
+  font-size: 16px; 
+  /* Dodajemy lekkie wygładzenie i zwiększamy grubość dla lepszego kontrastu */
+  font-weight: 500;
+  line-height: 1.5;
+}
+
+/* Wzmocnienie czytelności dla wszystkich tekstów terminalowych */
+.terminal {
+    background: rgba(0, 0, 0, 0.95);
+    border: 1px solid rgba(34, 197, 94, 0.3);
+    /* Dodajemy lekką poświatę literom, by nie były zbyt "cienkie" */
+    text-shadow: 0 0 2px rgba(154, 255, 154, 0.2);
+}
+
+/* Poprawa przycisków admina - teraz będą większe i wyraźniejsze */
+.admin-btn {
+    font-size: 12px !important; 
+    padding: 10px !important;
+    letter-spacing: 1px;
 }
 
 #monitor-overlay {
