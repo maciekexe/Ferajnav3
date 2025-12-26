@@ -43,6 +43,7 @@
     <div class="flex flex-col gap-2">
         <button onclick="adminQuickUpdateBulletin()" class="admin-btn text-blue-400 border-blue-900/50">Edytuj Biuletyn</button>
         <button onclick="adminQuickResetRadio()" class="admin-btn text-red-400 border-red-900/50">Resetuj Radio</button>
+        <button onclick="adminToggleAlert()" class="admin-btn text-red-500 border-red-900/50">Przełącz Alarm (GLOBAL)</button>
         <button onclick="refreshStatus()" class="admin-btn text-green-400 border-green-900/50">Wymuś Skan (IP)</button>
     </div>
 </div>
@@ -141,6 +142,34 @@
                     </div>
                 </div>
             </section>
+
+<section class="terminal p-6 border-l-4 border-zinc-500 bg-zinc-900/10 mt-6">
+    <div class="flex justify-between items-center mb-4">
+        <h2 class="text-xl text-gray-400 uppercase font-black font-mono tracking-tighter">📡 Intel / Coordinates</h2>
+        <button onclick="toggleIntelForm()" class="text-[10px] bg-zinc-800 px-2 py-1 border border-zinc-600 hover:bg-zinc-600 hover:text-black font-bold uppercase transition-all">Add Entry +</button>
+    </div>
+
+    <div id="intel-form" class="hidden mb-6 p-4 border border-zinc-700 bg-black/60 space-y-3">
+        <div class="grid grid-cols-2 gap-2">
+            <input id="i-location" type="text" placeholder="NAZWA LOKACJI (np. Bunkier Alpha)" class="bg-zinc-900 border border-zinc-700 p-2 text-[10px] text-yellow-600 focus:outline-none uppercase font-mono">
+            <input id="i-coords" type="text" placeholder="KORDY (np. X: 120 Z: -450)" class="bg-zinc-900 border border-zinc-700 p-2 text-[10px] text-yellow-600 focus:outline-none uppercase font-mono">
+            <div class="mt-2">
+    <span class="text-[9px] text-gray-600 uppercase font-bold">Poziom Zagrożenia:</span>
+    <select id="i-threat" class="w-full bg-zinc-900 border border-zinc-700 p-1 text-[10px] text-gray-400 focus:outline-none uppercase font-mono">
+        <option value="low">NISKIE (BEZPIECZNIE)</option>
+        <option value="med">ŚREDNIE (MOŻLIWE HORDY)</option>
+        <option value="high">WYSOKIE (STREFA ŚMIERCI)</option>
+    </select>
+</div>
+        </div>
+        <textarea id="i-note" placeholder="KRÓTKI OPIS ZAGROŻEŃ LUB ŁUPU..." class="w-full bg-zinc-900 border border-zinc-700 p-2 text-[10px] text-gray-400 h-16 focus:outline-none uppercase font-mono"></textarea>
+        <button onclick="submitIntel()" class="w-full bg-zinc-700 text-black font-black py-2 text-[10px] hover:bg-yellow-600 transition-all uppercase">Transmit Intelligence</button>
+    </div>
+
+    <div id="intel-list" class="grid grid-cols-1 md:grid-cols-2 gap-4 text-[10px] font-mono">
+        </div>
+</section>
+
 
             <section class="terminal p-6">
                 <h2 class="text-xl text-red-600 mb-4 flex items-center uppercase tracking-tighter font-black font-mono">
