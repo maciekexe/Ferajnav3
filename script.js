@@ -1,3 +1,5 @@
+
+
 // ======================================================
 // 1. KONFIGURACJA FIREBASE 
 // ======================================================
@@ -19,7 +21,7 @@ const db = firebase.database();
 // ======================================================
 // 2. KONFIGURACJA TERMINALA
 // ======================================================
-const serverIP = "ferajnav3.aternos.me";
+const serverIP = "Ferajnav3.aternos.me:25921"; 
 const serverStartDate = new Date("2025-12-30");
 let lastPlayerList = [];
 let isSystemCrashing = false;
@@ -352,29 +354,44 @@ function updateTicker(bounties) {
     document.getElementById("ticker-text").innerHTML = html;
 }
 
+
 async function refreshStatus() {
     const mainS = document.getElementById("server-status-main");
     const pList = document.getElementById("player-list");
+    const pCount = document.getElementById("player-count");
+
     try {
-        const res = await fetch(`https://api.mcsrvstat.us/2/${serverIP}`);
+        // Używamy mcstatus.io - to API najlepiej radzi sobie z niestandardowymi portami (jak Twoje 25921)
+        const res = await fetch(`https://api.mcstatus.io/v2/status/java/${serverIP}`);
         const data = await res.json();
+
         if (data.online) {
-            mainS.innerText = "ONLINE"; mainS.className = "text-2xl font-bold text-green-400 animate-pulse font-mono font-black";
-            const players = data.players.list || [];
-            players.forEach(p => { if (!lastPlayerList.includes(p)) addSystemLog(`Signal found: ${p}.`, "JOIN"); });
-            lastPlayerList.forEach(p => { if (!players.includes(p)) addSystemLog(`Signal lost: ${p}.`, "ALARM"); });
-            lastPlayerList = players;
-            pList.innerHTML = players.map(p => `<div class="flex items-center gap-3 border-b border-white/5 pb-1"><img src="https://minotar.net/helm/${p}/20" class="border border-green-900 shadow-sm"><span class="text-green-400 text-xs font-bold uppercase tracking-widest font-mono">${p}</span><span class="text-[8px] text-gray-600 ml-auto italic font-bold">LIVE</span></div>`).join('');
-            document.getElementById("player-count").innerText = `SURVIVORS: ${data.players.online}/${data.players.max}`;
-            document.getElementById("server-status-text").innerText = "STABLE LINK";
-            document.getElementById("server-status-text").className = "text-sm font-bold text-green-400 uppercase italic";
+            mainS.innerText = "ONLINE";
+            mainS.className = "text-2xl font-bold text-green-400 animate-pulse font-mono font-black";
+            
+            pCount.innerText = `SURVIVORS: ${data.players.online}/${data.players.max}`;
+            
+            // Jeśli Query działa (a ustawiłeś enable-query=true), lista graczy się pojawi
+            if (data.players.list && data.players.list.length > 0) {
+                pList.innerHTML = data.players.list.map(p => `
+                    <div class="flex items-center gap-3 border-b border-white/5 pb-1">
+                        <img src="https://minotar.net/helm/${p.name_clean}/20" class="border border-green-900 shadow-sm">
+                        <span class="text-green-400 text-xs font-bold uppercase font-mono">${p.name_clean}</span>
+                    </div>`).join('');
+            } else if (data.players.online > 0) {
+                pList.innerHTML = "<div class='text-yellow-600 text-[10px] italic uppercase'>Signal detected but masked...</div>";
+            } else {
+                pList.innerHTML = "<div class='text-gray-800 text-[10px] uppercase'>No signals in range...</div>";
+            }
         } else {
-            mainS.innerText = "OFFLINE"; mainS.className = "text-2xl font-bold text-red-600 italic font-mono";
-            pList.innerHTML = "<div class='text-gray-800 text-xs italic uppercase tracking-tighter'>Scanning dead zone...</div>";
-            document.getElementById("server-status-text").innerText = "OUT OF RANGE";
-            document.getElementById("server-status-text").className = "text-sm font-bold text-red-600 uppercase italic";
+            mainS.innerText = "OFFLINE";
+            mainS.className = "text-2xl font-bold text-red-600 italic font-mono";
+            pCount.innerText = "SURVIVORS: 0/0";
+            pList.innerHTML = "<div class='text-gray-800 text-xs italic uppercase'>Scanning...</div>";
         }
-    } catch (e) {}
+    } catch (e) {
+        console.log("Ping error - system unstable.");
+    }
 }
 
 const tick = () => {
