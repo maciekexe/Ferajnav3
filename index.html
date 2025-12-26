@@ -75,32 +75,48 @@
         LOAD: <span id="grid-load">2.4kW</span>
     </div>
 
-    <header class="terminal p-8 mb-6 border-b-4 border-red-900">
-        <div class="flex flex-col md:flex-row justify-between items-center gap-4">
-            <div class="text-left text-center md:text-left">
-                <h1 class="text-5xl md:text-7xl font-extrabold text-red-600 tracking-tighter uppercase font-black">Ferajnav3</h1>
-                <p class="text-green-500 opacity-80 uppercase tracking-widest text-[10px] mt-2 font-bold italic">DeceasedCraft OS // Survival Terminal</p>
-            </div>
-            <div class="text-right border-l border-green-900 pl-6 hidden md:block">
-                <p class="text-xs text-gray-500 uppercase italic font-bold">Threat Level</p>
-                <p id="threat-level" class="text-2xl text-red-600 font-bold animate-pulse uppercase">Critical</p>
-            </div>
-        </div>
+   <header class="terminal p-8 mb-6 border-b-4 border-red-900">
+    <div class="flex flex-col md:flex-row justify-between items-center gap-6">
         
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8 border-t border-green-900 pt-6">
-            <div><p class="text-xs text-gray-500 uppercase font-bold">Days Active</p><p class="text-2xl font-bold text-gray-200" id="days">0</p></div>
-            <div><p class="text-xs text-gray-500 uppercase font-bold">Link Status</p><p id="server-status-main" class="text-2xl font-bold text-red-600 italic">OFFLINE</p></div>
-            <div class="col-span-2">
-                <p class="text-xs text-gray-500 uppercase italic font-bold tracking-widest">Base IP Address</p>
-                <p class="text-xl font-bold text-red-400 cursor-pointer hover:text-red-300 transition-colors uppercase font-mono" onclick="copyIP()">ferajnav3.aternos.me</p>
+        <div class="flex flex-col md:flex-row items-center gap-6 text-center md:text-left">
+            
+            <div class="relative group">
+                <div class="absolute -inset-1 bg-red-600 rounded opacity-30 group-hover:opacity-60 transition duration-500 blur"></div>
+                
+                <img src="Ferajnav3.jpg" alt="Ferajna Logo" 
+                     class="relative w-24 h-24 md:w-32 md:h-32 object-cover border-2 border-red-900 shadow-2xl transition-transform duration-500 hover:scale-105">
+            </div>
+
+            <div>
+                <h1 class="text-5xl md:text-7xl font-extrabold text-red-600 tracking-tighter uppercase font-black leading-none">
+                    Ferajnav3
+                </h1>
+                <p class="text-green-500 opacity-80 uppercase tracking-widest text-[10px] mt-2 font-bold italic text-center md:text-left">
+                    DeceasedCraft OS // Survival Terminal
+                </p>
             </div>
         </div>
 
-        <div class="flex flex-wrap gap-4 mt-6 justify-center md:justify-start">
-            <button onclick="copyIP()" class="btn-tactical px-6 py-2 text-xs font-bold uppercase tracking-widest">Copy IP</button>
-            <button onclick="togglePower()" id="powerBtn" class="border border-green-500 px-6 py-2 text-xs font-bold text-green-500 uppercase tracking-widest transition-all">Power: OFF</button>
+        <div class="text-right border-l-0 md:border-l border-green-900 pl-0 md:pl-6 hidden md:block">
+            <p class="text-xs text-gray-500 uppercase italic font-bold">Threat Level</p>
+            <p id="threat-level" class="text-2xl text-red-600 font-bold animate-pulse uppercase">Critical</p>
         </div>
-    </header>
+    </div>
+    
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8 border-t border-green-900 pt-6">
+        <div><p class="text-xs text-gray-500 uppercase font-bold">Days Active</p><p class="text-2xl font-bold text-gray-200" id="days">0</p></div>
+        <div><p class="text-xs text-gray-500 uppercase font-bold">Link Status</p><p id="server-status-main" class="text-2xl font-bold text-red-600 italic">OFFLINE</p></div>
+        <div class="col-span-2 text-right md:text-left">
+            <p class="text-xs text-gray-500 uppercase italic font-bold tracking-widest">Base IP Address</p>
+            <p class="text-xl font-bold text-red-400 cursor-pointer hover:text-red-300 transition-colors uppercase font-mono" onclick="copyIP()">ferajnav3.aternos.me</p>
+        </div>
+    </div>
+
+    <div class="flex flex-wrap gap-4 mt-6 justify-center md:justify-start">
+        <button onclick="copyIP()" class="btn-tactical px-6 py-2 text-xs font-bold uppercase tracking-widest">Copy IP</button>
+        <button onclick="togglePower()" id="powerBtn" class="border border-green-500 px-6 py-2 text-xs font-bold text-green-500 uppercase tracking-widest transition-all">Power: OFF</button>
+    </div>
+</header>
 
     <div class="grid md:grid-cols-3 gap-6">
         <div class="md:col-span-2 space-y-6">

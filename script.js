@@ -190,9 +190,11 @@ function addSystemLog(msg, type = "INFO") {
     const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     db.ref('logs').push({ msg, type, time });
 }
-
 function adminQuickResetRadio() {
-    if (currentUser !== 'admin') return;
+    if (!currentUser || currentUser.uid !== adminUID) {
+        alert("BRAK UPRAWNIEŃ ADMINA.");
+        return;
+    }
     if (confirm("CZY NA PEWNO WYCZYŚCIĆ WSZYSTKIE LOGI?")) {
         db.ref('logs').remove();
         addSystemLog("SYSTEM RADIOWY ZRESETOWANY.", "EVENT");
@@ -200,7 +202,10 @@ function adminQuickResetRadio() {
 }
 
 function adminQuickUpdateBulletin() {
-    if (currentUser !== 'admin') return;
+    if (!currentUser || currentUser.uid !== adminUID) {
+        alert("BRAK UPRAWNIEŃ ADMINA.");
+        return;
+    }
     const name = prompt("NAME:", "DZIEŃ ZERO: MOBILIZACJA");
     const phase = prompt("STATUS:", "PRZYGOTOWANIA");
     const percent = prompt("PROGRESS:", "10");
@@ -217,12 +222,22 @@ function adminQuickUpdateBulletin() {
 }
 
 function submitBounty() {
-    if (!currentUser) { alert("ZALOGUJ SIĘ!"); return; }
-    const target = document.getElementById("b-target").value;
-    const reward = document.getElementById("b-reward").value;
-    const reason = document.getElementById("b-reason").value;
-    if (!target || !reward || !reason) return;
+    // Sprawdzamy, czy jakikolwiek użytkownik jest zalogowany (obiekt nie jest null)
+    if (!currentUser) { 
+        alert("BŁĄD: MUSISZ BYĆ ZALOGOWANY, ABY DODAĆ ZLECENIE."); 
+        return; 
+    }
 
+    const target = document.getElementById("b-target").value.trim();
+    const reward = document.getElementById("b-reward").value.trim();
+    const reason = document.getElementById("b-reason").value.trim();
+
+    if (!target || !reward || !reason) {
+        alert("WYPEŁNIJ WSZYSTKIE POLA.");
+        return;
+    }
+
+    // Wysyłanie do bazy
     db.ref('bounties').push({
         target: target.toUpperCase(),
         reward: reward.toUpperCase(),
@@ -232,6 +247,7 @@ function submitBounty() {
         completedAt: null
     });
 
+    // Czyszczenie pól
     document.getElementById("b-target").value = ""; 
     document.getElementById("b-reward").value = ""; 
     document.getElementById("b-reason").value = "";
@@ -239,12 +255,27 @@ function submitBounty() {
     addSystemLog(`NEW CONTRACT: ${target}`, "INFO");
 }
 
+// --- FUNKCJA ZARZĄDZANIA ZLECENIEM (TYLKO ADMIN) ---
 function adminManageBounty(id) {
-    if (currentUser !== 'admin') { alert("TYLKO ADMIN."); return; }
-    const choice = prompt("1-APPROVED, 2-EXECUTED, 3-DELETE");
-    if (choice === "1") db.ref('bounties/' + id).update({ status: 'APPROVED' });
-    else if (choice === "2") db.ref('bounties/' + id).update({ status: 'EXECUTED', completedAt: Date.now() });
-    else if (choice === "3") db.ref('bounties/' + id).remove();
+    // KLUCZOWA POPRAWKA: Sprawdzamy unikalny identyfikator UID zamiast napisu
+    if (!currentUser || currentUser.uid !== adminUID) { 
+        alert("TYLKO GŁÓWNY ADMINISTRATOR MOŻE MODYFIKOWAĆ ZLECENIA."); 
+        return; 
+    }
+
+    const choice = prompt("WYBIERZ AKCJĘ:\n1 - APPROVED (Zatwierdź)\n2 - EXECUTED (Wykonane)\n3 - DELETE (Usuń)");
+
+    if (choice === "1") {
+        db.ref('bounties/' + id).update({ status: 'APPROVED' });
+        addSystemLog("CONTRACT APPROVED BY ADMIN", "EVENT");
+    } else if (choice === "2") {
+        db.ref('bounties/' + id).update({ status: 'EXECUTED', completedAt: Date.now() });
+        addSystemLog("CONTRACT MARKED AS EXECUTED", "EVENT");
+    } else if (choice === "3") {
+        if (confirm("CZY NA PEWNO USUNĄĆ TO ZLECENIE?")) {
+            db.ref('bounties/' + id).remove();
+        }
+    }
 }
 
 // ======================================================
