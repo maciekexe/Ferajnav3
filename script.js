@@ -1,5 +1,5 @@
 // ======================================================
-// 1. KONFIGURACJA FIREBASE (TWOJE DANE)
+// 1. KONFIGURACJA FIREBASE 
 // ======================================================
 const firebaseConfig = {
     apiKey: "AIzaSyCg6FV9e7mWRaDMsW47dZ0ABvkicQ5PrI0",
@@ -95,6 +95,8 @@ db.ref('bounties').on('value', (snapshot) => {
 // 4. BIOS & LOGIN (FIREBASE)
 // ======================================================
 
+const adminUID = "UD97Gi8bGAhwh0QLXZMrx6VGPVe2"; 
+
 const bootLines = [
     "F3-OS (tm) BIOS v1.0.4 - RELEASE 2025",
     "CPU: AMD RYZEN TERMINAL CORE... OK",
@@ -109,6 +111,7 @@ async function runBootSequence() {
     const loader = document.getElementById("boot-loader");
     const textTarget = document.getElementById("boot-text");
     const loginBox = document.getElementById("login-box");
+    
     loader.classList.remove("hidden");
     textTarget.innerHTML = "";
     currentUser = null;
@@ -126,21 +129,22 @@ async function runBootSequence() {
     return new Promise((resolve) => {
         const handleLogin = async (e) => {
             if (e.key === "Enter") {
-                const u = document.getElementById("login-user").value.toLowerCase();
-                const p = document.getElementById("login-pass").value;
+                const userInput = document.getElementById("login-user").value.toLowerCase();
+                const email = userInput.includes("@") ? userInput : userInput + "@f3.pl";
+                const pass = document.getElementById("login-pass").value;
 
-                // Sprawdzanie w Firebase (ścieżka /users/nick)
-                const snapshot = await db.ref('users/' + u).once('value');
-                const userData = snapshot.val();
-
-                if (userData && userData.password === p) {
+                try {
+                    const userCredential = await firebase.auth().signInWithEmailAndPassword(email, pass);
+                    currentUser = userCredential.user;
+                    
                     window.removeEventListener("keydown", handleLogin);
                     loginBox.classList.add("hidden");
-                    currentUser = u;
                     resolve(true);
-                } else {
-                    window.removeEventListener("keydown", handleLogin);
-                    resolve(false);
+                } catch (error) {
+                    textTarget.innerHTML += `<br><span class="text-red-600 font-bold italic">AUTHENTICATION_FAILED: INVALID_CREDENTIALS</span>`;
+                    document.getElementById("login-user").value = "";
+                    document.getElementById("login-pass").value = "";
+                    document.getElementById("login-user").focus();
                 }
             }
         };
@@ -148,24 +152,34 @@ async function runBootSequence() {
     });
 }
 
-async function finishBoot(username) {
-    const textTarget = document.getElementById("boot-text");
+async function finishBoot(user) {
+   const textTarget = document.getElementById("boot-text");
+   const displayName = user.email.split('@')[0].toUpperCase();
+
     const postLoginLines = [
         "---------------------------------------",
-        `WITAJ, ${username.toUpperCase()}.`,
+        `WITAJ, ${displayName}.`, 
         "DOSTĘP DO TERMINALA PRZYZNANY.",
         "---------------------------------------",
-        "MOUNTING /dev/null/ferajna...",
         "INITIALIZING SURVIVAL PROTOCOL...",
         "SYSTEM READY."
     ];
+
     for(let line of postLoginLines) {
         textTarget.innerHTML += `> ${line}<br>`;
         await new Promise(r => setTimeout(r, 80)); 
     }
+    
     await new Promise(r => setTimeout(r, 400));
     document.getElementById("boot-loader").classList.add("hidden");
-    if (username === 'admin') document.getElementById("admin-tools-panel").classList.remove("hidden");
+    
+    // WIDGET DLA ADMINA: Sprawdzamy UID 
+    if (user.uid === adminUID) {
+        document.getElementById("admin-tools-panel").classList.remove("hidden");
+        addSystemLog("ADMIN SESSION INITIALIZED.", "EVENT");
+    } else {
+        addSystemLog(`USER SESSION: ${displayName}`, "INFO");
+    }
 }
 
 // ======================================================
